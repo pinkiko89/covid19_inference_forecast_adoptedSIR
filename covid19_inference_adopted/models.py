@@ -373,9 +373,12 @@ def _SIR_model(lambda_t, mu, S_begin, I_begin, N):
         
 
     def next_day(lambda_t, S_t, I_t, _, mu, N):
-        new_I_t = tt.zeros(16)
+        new_I_t_ = []
         for i in range(16):
-            new_I_t = tt.set_subtensor(new_I_t[i], lambda_t[i] / N[i] * I_t[i] * S_t[i])
+            new_I_t_.append(lambda_t[i] / N[i] * I_t[i] * S_t[i])
+        new_I_t = tt.stack(new_I_t_)
+        
+        for i in range(16):
             S_t = tt.set_subtensor(S_t[i], S_t[i] - new_I_t[i])
             I_t = tt.set_subtensor(I_t[i], I_t[i] + new_I_t[i] - mu[i] * I_t[i])
             I_t = tt.set_subtensor(I_t[i], tt.clip(I_t[i], 0, N[i]))  # for stability
