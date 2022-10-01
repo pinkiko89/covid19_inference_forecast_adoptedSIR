@@ -143,7 +143,7 @@ def SIR_with_change_points(
         + 3 * priors_dict["pr_median_delay"] * priors_dict["pr_sigma_delay"]
     ):
         print("WARNING: diff_data_sim could be to small compared to the prior delay")
-    if num_days_sim < len(new_cases_obs) + diff_data_sim:
+    if num_days_sim < len(new_cases_obs[0]) + diff_data_sim:
         raise RuntimeError(
             "Simulation ends before the end of the data. Increase num_days_sim."
         )
@@ -315,7 +315,7 @@ def SIR_with_change_points(
         # we want to approximate a Poisson distribution of new cases.
         # we choose nu=4 to get heavy tails and robustness to outliers.
         # https://www.jstor.org/stable/2290063
-        num_days_data = len(new_cases_obs)
+        num_days_data = len(new_cases_obs[0])
         
         for i in range(16):
             pm.StudentT(
@@ -324,7 +324,7 @@ def SIR_with_change_points(
                 mu=new_cases_inferred_eff[i][:num_days_data],
                 sigma=tt.abs_(new_cases_inferred[i][:num_days_data] + 1) ** 0.5
                 * sigma_obs,  # +1 and tt.abs to avoid nans
-                observed=new_cases_obs.iloc[:,i+1]
+                observed=new_cases_obs[i]
             )
 
             # add these observables to the model so we can extract a time series of them
