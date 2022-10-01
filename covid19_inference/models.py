@@ -155,150 +155,184 @@ def SIR_with_change_points(
     with pm.Model() as model:
         # all pm functions now apply on the model instance
         # true cases at begin of loaded data but we do not know the real number
-        I_begin = pm.HalfCauchy(name="I_begin", beta=priors_dict["pr_beta_I_begin"])
+        I_begin_ = []
+        for i in range(16):
+            I_begin_.append(pm.HalfCauchy(name=f"I_begin_{i}", 
+                                          beta=priors_dict["pr_beta_I_begin"])) #16x
+        I_begin = tt.stack(I_begin_)
 
-        # fraction of people that are newly infected each day
-        lambda_list = []
-        lambda_list.append(
-            pm.Lognormal(
-                name="lambda_0",
-                mu=np.log(priors_dict["pr_median_lambda_0"]),
-                sigma=priors_dict["pr_sigma_lambda_0"],
-            )
-        )
-        for i, cp in enumerate(change_points_list):
+        lambda_t = []
+        for j in range(16):
+            # fraction of people that are newly infected each day
+            lambda_list = []  #16x lambda_t
             lambda_list.append(
                 pm.Lognormal(
-                    name=f"lambda_{i + 1}",
-                    mu=np.log(cp["pr_median_lambda"]),
-                    sigma=cp["pr_sigma_lambda"],
+                    name=f"lambda_0_{j}",
+                    mu=np.log(priors_dict["pr_median_lambda_0"]),
+                    sigma=priors_dict["pr_sigma_lambda_0"],
                 )
             )
+            for i, cp in enumerate(change_points_list):
+                lambda_list.append(
+                    pm.Lognormal(
+                        name=f"lambda_{i + 1}_{j}",
+                        mu=np.log(cp["pr_median_lambda"]),
+                        sigma=cp["pr_sigma_lambda"],
+                    )
+                )
 
-        # list of start dates of the transient periods of the change points
-        tr_begin_list = []
-        dt_before = date_begin_simulation
-        for i, cp in enumerate(change_points_list):
-            dt_begin_transient = cp["pr_mean_date_begin_transient"]
-            if dt_before is not None and dt_before > dt_begin_transient:
-                raise RuntimeError("Dates of change points are not temporally ordered")
+            # list of start dates of the transient periods of the change points
+            tr_begin_list = []
+            dt_before = date_begin_simulation
+            for i, cp in enumerate(change_points_list):
+                dt_begin_transient = cp["pr_mean_date_begin_transient"]
+                if dt_before is not None and dt_before > dt_begin_transient:
+                    raise RuntimeError("Dates of change points are not temporally ordered")
 
-            prior_mean = (
-                dt_begin_transient - date_begin_simulation).days - 1  # convert the provided date format (argument) into days (a number)
+                prior_mean = (
+                    dt_begin_transient - date_begin_simulation).days - 1  # convert the provided date format (argument) into days (a number)
 
-            tr_begin = pm.Normal(
-                name=f"transient_begin_{i}",
-                mu=prior_mean,
-                sigma=cp["pr_sigma_date_begin_transient"],
-            )
-            tr_begin_list.append(tr_begin)
-            dt_before = dt_begin_transient
+                tr_begin = pm.Normal(
+                    name=f"transient_begin_{i}_{j}",
+                    mu=prior_mean,
+                    sigma=cp["pr_sigma_date_begin_transient"],
+                )
+                tr_begin_list.append(tr_begin)
+                dt_before = dt_begin_transient
 
-        # same for transient times
-        tr_len_list = []
-        for i, cp in enumerate(change_points_list):
-            tr_len = pm.Lognormal(
-                name=f"transient_len_{i}",
-                mu=np.log(cp["pr_median_transient_len"]),
-                sigma=cp["pr_sigma_transient_len"],
-            )
-            tr_len_list.append(tr_len)
+            # same for transient times
+            tr_len_list = []
+            for i, cp in enumerate(change_points_list):
+                tr_len = pm.Lognormal(
+                    name=f"transient_len_{i}_{j}",
+                    mu=np.log(cp["pr_median_transient_len"]),
+                    sigma=cp["pr_sigma_transient_len"],
+                )
+                tr_len_list.append(tr_len)
 
-        # build the time-dependent spreading rate
-        lambda_t_list = [lambda_list[0] * tt.ones(num_days_sim)]
-        lambda_before = lambda_list[0]
+            # build the time-dependent spreading rate
+            lambda_t_list = [lambda_list[0] * tt.ones(num_days_sim)]
+            lambda_before = lambda_list[0]
 
-        for tr_begin, tr_len, lambda_after in zip(
-            tr_begin_list, tr_len_list, lambda_list[1:]
-        ):
-            lambda_t = mh.smooth_step_function(
-                start_val=0,
-                end_val=1,
-                t_begin=tr_begin,
-                t_end=tr_begin + tr_len,
-                t_total=num_days_sim,
-            ) * (lambda_after - lambda_before)
-            lambda_before = lambda_after
-            lambda_t_list.append(lambda_t)
-        lambda_t = sum(lambda_t_list)
+            for tr_begin, tr_len, lambda_after in zip(
+                tr_begin_list, tr_len_list, lambda_list[1:]
+            ):
+                lambda_t__ = mh.smooth_step_function(
+                    start_val=0,
+                    end_val=1,
+                    t_begin=tr_begin,
+                    t_end=tr_begin + tr_len,
+                    t_total=num_days_sim,
+                ) * (lambda_after - lambda_before)
+                lambda_before = lambda_after
+                lambda_t_list.append(lambda_t__)
+            lambda_t_.append(sum(lambda_t_list))
+        
+        lambda_t = tt.stack(lambda_t_)
+        
 
         # fraction of people that recover each day, recovery rate mu
-        mu = pm.Lognormal(
-            name="mu",
-            mu=np.log(priors_dict["pr_median_mu"]),
-            sigma=priors_dict["pr_sigma_mu"],
-        )
+        mu_ = []
+        for i in range(16):
+            mu_.append(pm.Lognormal(  #16x
+                name=f"mu_{i}",
+                mu=np.log(priors_dict["pr_median_mu"]),
+                sigma=priors_dict["pr_sigma_mu"],
+            ))
+        mu = tt.stack(mu_)
+                  
 
         # delay in days between contracting the disease and being recorded
-        delay = pm.Lognormal(
-            name="delay",
-            mu=np.log(priors_dict["pr_median_delay"]),
-            sigma=priors_dict["pr_sigma_delay"],
-        )
+        delay_ = []
+        for i in range(16):
+            delay_.append(pm.Lognormal(  #16x
+                name=f"delay_{i}",
+                mu=np.log(priors_dict["pr_median_delay"]),
+                sigma=priors_dict["pr_sigma_delay"],
+            ))
+        delay = tt.stack(delay_)
 
         # prior of the error of observed cases
-        sigma_obs = pm.HalfCauchy("sigma_obs", beta=priors_dict["pr_beta_sigma_obs"])
+        sigma_obs_ = []
+        for i in range(16):
+            sigma_obs_.append(pm.HalfCauchy(
+                                      name=f"sigma_obs_{i}", 
+                                      beta=priors_dict["pr_beta_sigma_obs"]))  #16x
+        sigma_obs = tt.stack(sigma_obs_)
 
         # -------------------------------------------------------------------------- #
         # training the model with loaded data provided as argument
         # -------------------------------------------------------------------------- #
-
-        S_begin = N - I_begin
+        
+        S_begin_ = []
+        for i in range(16):
+            S_begin_.append(N[i] - I_begin[i])  #16x
+        S_begin = tt.stack(S_begin_)
+        
         S, I, new_I = _SIR_model(
             lambda_t=lambda_t, mu=mu, S_begin=S_begin, I_begin=I_begin, N=N
         )
+        
+        new_cases_inferred_ = []
+        for i in range(16):
+            new_cases_inferred_.append(mh.delay_cases(
+                new_I_t=new_I[i],
+                len_new_I_t=num_days_sim,
+                len_out=num_days_sim - diff_data_sim,
+                delay=delay[i],
+                delay_diff=diff_data_sim,
+            ))
+        new_cases_inferred = tt.stack(new_cases_inferred_)
 
-        new_cases_inferred = mh.delay_cases(
-            new_I_t=new_I,
-            len_new_I_t=num_days_sim,
-            len_out=num_days_sim - diff_data_sim,
-            delay=delay,
-            delay_diff=diff_data_sim,
-        )
+        new_cases_inferred_eff_ = []
+        for j in range(16):
+            if weekends_modulated:
+                week_end_factor = pm.Beta(f'weekend_factor_{j}', mu=priors_dict['pr_mean_weekend_factor'],
+                                                            sigma=priors_dict['pr_sigma_weekend_factor'])
+                if weekend_modulation_type == 'step':
+                    modulation = np.zeros(num_days_sim - diff_data_sim)
+                    for i in range(num_days_sim - diff_data_sim):
+                        date_curr = date_begin_simulation  + datetime.timedelta(days=i + diff_data_sim + 1)
+                        if date_curr.isoweekday() in priors_dict['week_end_days']:
+                            modulation[i] = 1
+                elif weekend_modulation_type == 'abs_sine':
+                    offset_rad = pm.VonMises(f'offset_modulation_rad_{j}', mu = 0, kappa = 0.01)
+                    offset = pm.Deterministic(f'offset_modulation_{j}', offset_rad/(2*np.pi)*7)
+                    t = np.arange(num_days_sim - diff_data_sim)
+                    date_begin = date_begin_simulation + datetime.timedelta(days=diff_data_sim + 1)
+                    weekday_begin = date_begin.weekday()
+                    t -= weekday_begin # Sunday is zero
+                    modulation = 1-tt.abs_(tt.sin(t/7 * np.pi + offset_rad/2))
 
-        if weekends_modulated:
-            week_end_factor = pm.Beta('weekend_factor', mu=priors_dict['pr_mean_weekend_factor'],
-                                                        sigma=priors_dict['pr_sigma_weekend_factor'])
-            if weekend_modulation_type == 'step':
-                modulation = np.zeros(num_days_sim - diff_data_sim)
-                for i in range(num_days_sim - diff_data_sim):
-                    date_curr = date_begin_simulation  + datetime.timedelta(days=i + diff_data_sim + 1)
-                    if date_curr.isoweekday() in priors_dict['week_end_days']:
-                        modulation[i] = 1
-            elif weekend_modulation_type == 'abs_sine':
-                offset_rad = pm.VonMises('offset_modulation_rad', mu = 0, kappa = 0.01)
-                offset = pm.Deterministic('offset_modulation', offset_rad/(2*np.pi)*7)
-                t = np.arange(num_days_sim - diff_data_sim)
-                date_begin = date_begin_simulation + datetime.timedelta(days=diff_data_sim + 1)
-                weekday_begin = date_begin.weekday()
-                t -= weekday_begin # Sunday is zero
-                modulation = 1-tt.abs_(tt.sin(t/7 * np.pi + offset_rad/2))
-
-            multiplication_vec = np.ones(num_days_sim - diff_data_sim) - (1 - week_end_factor) * modulation
-            new_cases_inferred_eff  = new_cases_inferred * multiplication_vec
-        else:
-            new_cases_inferred_eff = new_cases_inferred
+                multiplication_vec = np.ones(num_days_sim - diff_data_sim) - (1 - week_end_factor) * modulation
+                new_cases_inferred_eff_.append(new_cases_inferred * multiplication_vec)
+            else:
+                new_cases_inferred_eff_.append(new_cases_inferred)
+        new_cases_inferred_eff = tt.stack(new_cases_inferred_eff_)
 
         # likelihood of the model:
         # observed cases are distributed following studentT around the model.
         # we want to approximate a Poisson distribution of new cases.
         # we choose nu=4 to get heavy tails and robustness to outliers.
         # https://www.jstor.org/stable/2290063
-        num_days_data = new_cases_obs.shape[-1]
-        pm.StudentT(
-            name="_new_cases_studentT",
-            nu=4,
-            mu=new_cases_inferred_eff[:num_days_data],
-            sigma=tt.abs_(new_cases_inferred[:num_days_data] + 1) ** 0.5
-            * sigma_obs,  # +1 and tt.abs to avoid nans
-            observed=new_cases_obs,
-        )
+        num_days_data = len(new_cases_obs)
+        
+        for i in range(16):
+            pm.StudentT(
+                name=f"_new_cases_studentT_{i}",
+                nu=4,
+                mu=new_cases_inferred_eff[i][:num_days_data],
+                sigma=tt.abs_(new_cases_inferred[i][:num_days_data] + 1) ** 0.5
+                * sigma_obs,  # +1 and tt.abs to avoid nans
+                observed=new_cases_obs.iloc[:,i+1]
+            )
 
-        # add these observables to the model so we can extract a time series of them
-        # later via e.g. `model.trace['lambda_t']`
-        pm.Deterministic("lambda_t", lambda_t)
-        pm.Deterministic("new_cases", new_cases_inferred_eff)
-        pm.Deterministic("new_cases_raw", new_cases_inferred)
+            # add these observables to the model so we can extract a time series of them
+            # later via e.g. `model.trace['lambda_t']`
+        
+            pm.Deterministic(f"lambda_t_{i}", lambda_t[i]) # 16x
+            pm.Deterministic(f"new_cases_{i}", new_cases_inferred_eff[i])
+            pm.Deterministic(f"new_cases_raw_{i}", new_cases_inferred[i])
     return model
 
 
@@ -336,15 +370,22 @@ def _SIR_model(lambda_t, mu, S_begin, I_begin, N):
         new_I : array
             time series of the new infected
     """
-
-    new_I_0 = tt.zeros_like(I_begin)
+        
 
     def next_day(lambda_t, S_t, I_t, _, mu, N):
-        new_I_t = lambda_t / N * I_t * S_t
-        S_t = S_t - new_I_t
-        I_t = I_t + new_I_t - mu * I_t
-        I_t = tt.clip(I_t, 0, N)  # for stability
+        new_I_t = tt.zeros(16)
+        for i in range(16):
+            new_I_t = tt.set_subtensor(new_I_t[i], lambda_t[i] / N[i] * I_t[i] * S_t[i])
+            S_t = tt.set_subtensor(S_t[i], S_t[i] - new_I_t[i])
+            I_t = tt.set_subtensor(I_t[i], I_t[i] + new_I_t[i] - mu[i] * I_t[i])
+            I_t = tt.set_subtensor(I_t[i], tt.clip(I_t[i], 0, N[i]))  # for stability
         return S_t, I_t, new_I_t
+    
+    # for schleife start 16x
+    new_I_0_ = []
+    for i in range(len(lambda_t)):
+        new_I_0.append(tt.zeros_like(I_begin[i]))
+    new_I_0 = tt.stack(new_I_0_)
 
     # theano scan returns two tuples, first one containing a time series of
     # what we give in outputs_info : S, I, new_I
