@@ -384,7 +384,7 @@ def _SIR_model(lambda_t, mu, S_begin, I_begin, N):
     # for schleife start 16x
     new_I_0_ = []
     for i in range(16):
-        new_I_0.append(tt.zeros_like(I_begin[i]))
+        new_I_0_.append(tt.zeros_like(I_begin[i]))
     new_I_0 = tt.stack(new_I_0_)
 
     # theano scan returns two tuples, first one containing a time series of
