@@ -161,7 +161,7 @@ def SIR_with_change_points(
                                           beta=priors_dict["pr_beta_I_begin"])) #16x
         I_begin = tt.stack(I_begin_)
 
-        lambda_t = []
+        lambda_t_ = []
         for j in range(16):
             # fraction of people that are newly infected each day
             lambda_list = []  #16x lambda_t
