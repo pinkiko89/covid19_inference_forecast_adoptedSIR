@@ -9,7 +9,7 @@ with open('README.md') as f:
 
 verstr = "unknown"
 try:
-    verstrline = open('covid19_inference/_version.py', "rt").read()
+    verstrline = open('covid19_inference_adopted/_version.py', "rt").read()
 except EnvironmentError:
     pass
 else:
@@ -18,14 +18,14 @@ else:
     if mo:
         verstr = mo.group(1)
     else:
-        raise RuntimeError("unable to find version in covid19_inference/_version.py")
+        raise RuntimeError("unable to find version in covid19_inference_adopted/_version.py")
 
 setup(
-    name='covid19_inference',
+    name='covid19_inference_adopted',
     author='Jonas Dehning, Johannes Zierenberg, F. Paul Spitzner, Michael Wibral, Joao Pinheiro Neto, Michael Wilczek, Viola Priesemann',
     author_email='jonas.dehning@ds.mpg.de',
-    packages=['covid19_inference'],
-    url='https://github.com/Priesemann-Group/covid19_inference_forecast',
+    packages=['covid19_inference_adopted'],
+    url='https://github.com/pinkiko89/covid19_inference_forecast_adoptedSIR.git',
     python_requires='>=3.6.0',
     version = verstr,
 )
