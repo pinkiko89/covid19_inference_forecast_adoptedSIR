@@ -272,7 +272,7 @@ def SIR_with_change_points(
         S, I, new_I = _SIR_model(
             lambda_t=lambda_t, mu=mu, S_begin=S_begin, I_begin=I_begin, N=N
         )
-        print(tt.shape(new_I).eval())
+        #print(tt.shape(new_I).eval())
         
         new_cases_inferred_ = []
         for i in range(16):
