@@ -228,7 +228,7 @@ def SIR_with_change_points(
                 lambda_t_list.append(lambda_t__)
             lambda_t_.append(sum(lambda_t_list))
         
-        lambda_t = tt.stack(lambda_t_)
+        lambda_t = tt.stack(lambda_t_).T
         
 
         # fraction of people that recover each day, recovery rate mu
@@ -277,7 +277,7 @@ def SIR_with_change_points(
         new_cases_inferred_ = []
         for i in range(16):
             new_cases_inferred_.append(mh.delay_cases(
-                new_I_t=new_I[i],
+                new_I_t=new_I[:,i],
                 len_new_I_t=num_days_sim,
                 len_out=num_days_sim - diff_data_sim,
                 delay=delay[i],
