@@ -324,7 +324,7 @@ def SIR_with_change_points(
                 nu=4,
                 mu=new_cases_inferred_eff[i][:num_days_data],
                 sigma=tt.abs_(new_cases_inferred[i][:num_days_data] + 1) ** 0.5
-                * sigma_obs,  # +1 and tt.abs to avoid nans
+                * sigma_obs[i],  # +1 and tt.abs to avoid nans
                 observed=new_cases_obs[i]
             )
 
