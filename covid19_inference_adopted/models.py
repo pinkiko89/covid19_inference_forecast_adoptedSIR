@@ -283,7 +283,7 @@ def SIR_with_change_points(
                 delay=delay[i],
                 delay_diff=diff_data_sim,
             ))
-        new_cases_inferred = tt.stack(new_cases_inferred_)
+        new_cases_inferred = tt.stack(new_cases_inferred_).T
 
         new_cases_inferred_eff_ = []
         for j in range(16):
