@@ -283,7 +283,7 @@ def SIR_with_change_points(
                 delay=delay[i],
                 delay_diff=diff_data_sim,
             ))
-        new_cases_inferred = tt.stack(new_cases_inferred_).T
+        new_cases_inferred = tt.stack(new_cases_inferred_)
 
         new_cases_inferred_eff_ = []
         for j in range(16):
@@ -306,9 +306,9 @@ def SIR_with_change_points(
                     modulation = 1-tt.abs_(tt.sin(t/7 * np.pi + offset_rad/2))
 
                 multiplication_vec = np.ones(num_days_sim - diff_data_sim) - (1 - week_end_factor) * modulation
-                new_cases_inferred_eff_.append(new_cases_inferred * multiplication_vec)
+                new_cases_inferred_eff_.append(new_cases_inferred[j] * multiplication_vec)
             else:
-                new_cases_inferred_eff_.append(new_cases_inferred)
+                new_cases_inferred_eff_.append(new_cases_inferred[j])
         new_cases_inferred_eff = tt.stack(new_cases_inferred_eff_)
 
         # likelihood of the model:
