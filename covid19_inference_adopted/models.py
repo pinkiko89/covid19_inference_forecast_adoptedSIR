@@ -735,6 +735,73 @@ def _SIR_model(lambda_t, mu, S_begin, I_begin, N):
     )
     return outputs
 
+def _SIR_model_all_states(lambda_t, mu, S_begin, I_begin, N):
+    """
+        Implements the susceptible-infected-recovered model
+
+        Parameters
+        ----------
+        lambda_t : ~numpy.ndarray
+            time series of spreading rate, the length of the array sets the
+            number of steps to run the model for
+
+        mu : number
+            recovery rate
+
+        S_begin : number
+            initial number of susceptible at first time step
+
+        I_begin : number
+            initial number of infected
+
+        N : number
+            population size
+
+        Returns
+        -------
+        S : array
+            time series of the susceptible
+
+        I : array
+            time series of the infected
+
+        new_I : array
+            time series of the new infected
+    """
+        
+
+    def next_day(lambda_t, S_t, I_t, _, mu, N):
+        new_I_t_ = []
+        for i in range(16):
+            # new_I = lambda_t[i] / N[i] * I_t[i] * S_t[i]
+            new_I = lambda_t[16*i+0] / N[i] * I_t[0] * S_t[i]
+            for k in range(1,16):
+                new_I += lambda_t[16*i+k] / N[i] * I_t[k] * S_t[i]
+            new_I_t_.append(new_I)
+        new_I_t = tt.stack(new_I_t_)
+        
+        for i in range(16):
+            S_t = tt.set_subtensor(S_t[i], S_t[i] - new_I_t[i])
+            I_t = tt.set_subtensor(I_t[i], I_t[i] + new_I_t[i] - mu[i] * I_t[i])
+            I_t = tt.set_subtensor(I_t[i], tt.clip(I_t[i], 0, N[i]))  # for stability
+        return S_t, I_t, new_I_t
+    
+    # for schleife start 16x
+    new_I_0_ = []
+    for i in range(16):
+        new_I_0_.append(tt.zeros_like(I_begin[i]))
+    new_I_0 = tt.stack(new_I_0_)
+
+    # theano scan returns two tuples, first one containing a time series of
+    # what we give in outputs_info : S, I, new_I
+    outputs, _ = theano.scan(
+        fn=next_day,
+        sequences=[lambda_t],
+        outputs_info=[S_begin, I_begin, new_I_0],
+        non_sequences=[mu, N],
+    )
+    return outputs
+
 
 # ------------------------------------------------------------------------------ #
 # the more advanced model
