@@ -84,7 +84,7 @@ def SIR_with_change_points_all_states(
         pr_median_lambda_0=0.4,
         pr_median_lambda_0_other = 0.4/2,
         pr_sigma_lambda_0=0.5,
-        pr_sigma_lambda_0_other = 0.5/2
+        pr_sigma_lambda_0_other = 0.5/2,
         pr_median_mu=1 / 8,
         pr_sigma_mu=0.2,
         pr_median_delay=8,
@@ -98,7 +98,7 @@ def SIR_with_change_points_all_states(
         pr_median_lambda=default_priors["pr_median_lambda_0"],
         pr_sigma_lambda=default_priors["pr_sigma_lambda_0"],
         pr_median_lambda_other=default_priors["pr_median_lambda_0_other"],
-        pr_sigma_lambda_other=default_priors["pr_sigma_lambda_0_other"]
+        pr_sigma_lambda_other=default_priors["pr_sigma_lambda_0_other"],
         pr_sigma_date_begin_transient=3,
         pr_median_transient_len=3,
         pr_sigma_transient_len=0.3,
