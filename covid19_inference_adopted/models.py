@@ -1232,15 +1232,16 @@ def _SIR_model_neighbor_states(lambda_t, mu, S_begin, I_begin, N):
             time series of the new infected
     """
         
+    
 
     def next_day(lambda_t, S_t, I_t, _, mu, N):
         new_I_t_ = []
         for i in range(16):
             # new_I = lambda_t[i] / N[i] * I_t[i] * S_t[i]
-            new_I = lambda_t[get_neighbor_index(i,i)] / N[i] * I_t[i] * S_t[i]
+            new_I = lambda_t[get_lambda_index(i,i)] / N[i] * I_t[i] * S_t[i]
             for k in range(16):
                 if i != k and is_neighbour(i,k):
-                    new_I += lambda_t[get_neighbor_index(i,k)] / N[i] * I_t[k] * S_t[i]
+                    new_I += lambda_t[get_lambda_index(i,k)] / N[i] * I_t[k] * S_t[i]
             new_I_t_.append(new_I)
         new_I_t = tt.stack(new_I_t_)
         
