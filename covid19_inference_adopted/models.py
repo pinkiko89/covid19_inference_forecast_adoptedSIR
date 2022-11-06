@@ -88,7 +88,7 @@ def SIR_with_change_points_neighbor_states(
         pr_median_lambda_0=0.4,
         pr_median_lambda_0_other = 0.4/2,
         pr_sigma_lambda_0=0.5,
-        pr_sigma_lambda_0_other = 0.5/2,
+        pr_sigma_lambda_0_other = 0.5,
         pr_median_mu=1 / 8,
         pr_sigma_mu=0.2,
         pr_median_delay=8,
@@ -163,6 +163,7 @@ def SIR_with_change_points_neighbor_states(
             for j in range(16): # alle anderen Bundesländer 
                 if not is_neighbour(k,j):
                     continue
+                
                 # fraction of people that are newly infected each day
                 lambda_list = []
                 
@@ -431,7 +432,7 @@ def SIR_with_change_points_all_states(
         pr_median_lambda_0=0.4,
         pr_median_lambda_0_other = 0.4/2,
         pr_sigma_lambda_0=0.5,
-        pr_sigma_lambda_0_other = 0.5/2,
+        pr_sigma_lambda_0_other = 0.5,
         pr_median_mu=1 / 8,
         pr_sigma_mu=0.2,
         pr_median_delay=8,
@@ -1182,7 +1183,8 @@ def is_neighbour(n,m):
                      [False, False, False, False, False, True,  False, True,  True,  False, False, False, False, False, True, False], #Schle
                      [False, True,  False, False, False, False, True,  False, True,  False, False, False, True,  True,  False, True]  #Thü
                 ]
-    return(neighbour_mat[n][m])  
+    #return(neighbour_mat[n][m])  
+    return True
 
 
 def get_lambda_index(n,m):
