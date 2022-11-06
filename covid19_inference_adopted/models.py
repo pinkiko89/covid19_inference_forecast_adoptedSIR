@@ -244,6 +244,7 @@ def SIR_with_change_points_neighbor_states(
                     lambda_t_list.append(lambda_t__)
                 lambda_t_.append(sum(lambda_t_list))
         
+        print("Created ", len(lambda_t_), " lambda variables")
         lambda_t = tt.stack(lambda_t_).T
         
 
@@ -1183,8 +1184,8 @@ def is_neighbour(n,m):
                      [False, False, False, False, False, True,  False, True,  True,  False, False, False, False, False, True, False], #Schle
                      [False, True,  False, False, False, False, True,  False, True,  False, False, False, True,  True,  False, True]  #Thü
                 ]
-    #return(neighbour_mat[n][m])  
-    return True
+    return(neighbour_mat[n][m])  
+    #return True
 
 
 def get_lambda_index(n,m):
@@ -1197,7 +1198,9 @@ def get_lambda_index(n,m):
             
     # get index of a specific lambda
     tmp = 'Lambda_'+str(n)+'_'+str(m)
-    return lambdas.index(tmp);
+    index = lambdas.index(tmp)
+    print("Returning lambda array index: ", index, " for ", tmp)
+    return index
 
 
 def _SIR_model_neighbor_states(lambda_t, mu, S_begin, I_begin, N):
