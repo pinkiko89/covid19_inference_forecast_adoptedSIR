@@ -1184,8 +1184,8 @@ def is_neighbour(n,m):
                      [False, False, False, False, False, True,  False, True,  True,  False, False, False, False, False, True, False], #Schle
                      [False, True,  False, False, False, False, True,  False, True,  False, False, False, True,  True,  False, True]  #Thü
                 ]
-    return(neighbour_mat[n][m])  
-    #return True
+    #return(neighbour_mat[n][m])  
+    return True
 
 
 def get_lambda_index(n,m):
