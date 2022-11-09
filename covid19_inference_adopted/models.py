@@ -161,41 +161,60 @@ def SIR_with_change_points_neighbor_states(
         lambda_t_ = []
         for k in range (16): # aktuelles Bundesland
             for j in range(16): # alle anderen Bundesländer 
-                if not is_neighbour(k,j):
-                    continue
+                #if not is_neighbour(k,j):
+                #    continue
                 
                 # fraction of people that are newly infected each day
                 lambda_list = []
                 
-                if k == j:
-                    mu=np.log(priors_dict["pr_median_lambda_0"])
-                    sigma=priors_dict["pr_sigma_lambda_0"]
-                else:
-                    mu=np.log(priors_dict["pr_median_lambda_0_other"])
-                    sigma=priors_dict["pr_sigma_lambda_0_other"]
-                    
-                lambda_list.append(
-                    pm.Lognormal(
-                        name=f"lambda_0_{j}_{k}",
-                        mu=mu,
-                        sigma=sigma,
-                    )
-                )
-                for i, cp in enumerate(change_points_list):
+                if is_neighbour(k,j):
+                
                     if k == j:
-                        mu=np.log(cp["pr_median_lambda"])
-                        sigma=cp["pr_sigma_lambda"]
+                        mu=np.log(priors_dict["pr_median_lambda_0"])
+                        sigma=priors_dict["pr_sigma_lambda_0"]
                     else:
-                        mu=np.log(cp["pr_median_lambda_other"])
-                        sigma=cp["pr_sigma_lambda_other"]
-                        
+                        mu=np.log(priors_dict["pr_median_lambda_0_other"])
+                        sigma=priors_dict["pr_sigma_lambda_0_other"]
+
+
                     lambda_list.append(
                         pm.Lognormal(
-                            name=f"lambda_{i + 1}_{j}_{k}",
+                            name=f"lambda_0_{j}_{k}",
                             mu=mu,
                             sigma=sigma,
                         )
                     )
+                    for i, cp in enumerate(change_points_list):
+                        if k == j:
+                            mu=np.log(cp["pr_median_lambda"])
+                            sigma=cp["pr_sigma_lambda"]
+                        else:
+                            mu=np.log(cp["pr_median_lambda_other"])
+                            sigma=cp["pr_sigma_lambda_other"]
+
+                        lambda_list.append(
+                            pm.Lognormal(
+                                name=f"lambda_{i + 1}_{j}_{k}",
+                                mu=mu,
+                                sigma=sigma,
+                            )
+                        )
+                else:
+
+                    lambda_list.append(
+                        pm.Deterministic(
+                            name=f"lambda_0_{j}_{k}",
+                            var=pm.math.constant(0)
+                        )
+                    )
+                    for i, cp in enumerate(change_points_list):
+
+                        lambda_list.append(
+                            pm.Deterministic(
+                                name=f"lambda_{i + 1}_{j}_{k}",
+                                var=pm.math.constant(0)
+                            )
+                        )
 
                 # list of start dates of the transient periods of the change points
                 tr_begin_list = []
@@ -286,7 +305,7 @@ def SIR_with_change_points_neighbor_states(
             S_begin_.append(N[i] - I_begin[i])  #16x
         S_begin = tt.stack(S_begin_)
         
-        S, I, new_I = _SIR_model_neighbor_states(
+        S, I, new_I = _SIR_model_all_states( ###Achtung Achtung! all_States, weil die nicht Nachbarstates ein 0er Lambda haben, s.o. !!!
             lambda_t=lambda_t, mu=mu, S_begin=S_begin, I_begin=I_begin, N=N
         )
         #print(tt.shape(new_I).eval())
