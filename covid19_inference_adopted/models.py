@@ -168,7 +168,7 @@ def SIR_with_change_points_neighbor_states(
                 lambda_list = []
                 
                 if is_neighbour(k,j):
-                    print("Create Lambda for Neighbors: ", k, " ", "j")
+                    print("Create Lambda for Neighbors: ", k, " ", j)
                     if k == j:
                         mu=np.log(priors_dict["pr_median_lambda_0"])
                         sigma=priors_dict["pr_sigma_lambda_0"]
@@ -200,7 +200,7 @@ def SIR_with_change_points_neighbor_states(
                             )
                         )
                 else:
-                    print("Create Lambda for not Neighbors: ", k, " ", "j")
+                    print("Create Lambda for not Neighbors: ", k, " ", j)
                     lambda_list.append(
                         pm.Deterministic(
                             name=f"lambda_0_{j}_{k}",
